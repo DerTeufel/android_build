@@ -444,6 +444,51 @@ function print_lunch_menu()
     echo
 }
 
+function brunch()
+{
+    breakfast $*
+    if [ $? -eq 0 ]; then
+        export CM_FAST_BUILD=1
+        mka bacon
+    else
+        echo "No such item in brunch menu. Try 'breakfast'"
+        return 1
+    fi
+    return $?
+}
+
+function breakfast()
+{
+    target=$1
+    CM_DEVICES_ONLY="true"
+    unset LUNCH_MENU_CHOICES
+    add_lunch_combo full-eng
+    for f in `/bin/ls vendor/cm/vendorsetup.sh 2> /dev/null`
+        do
+            echo "including $f"
+            . $f
+        done
+    unset f
+
+    if [ $# -eq 0 ]; then
+        # No arguments, so let's have the full menu
+        lunch
+    else
+        echo "z$target" | grep -q "-"
+        if [ $? -eq 0 ]; then
+            # A buildtype was specified, assume a full device name
+            lunch $target
+        else
+            # This is probably just the CM model name
+            lunch $target-userdebug
+        fi
+    fi
+    return $?
+}
+
+alias bib=breakfast
+
+
 function lunch()
 {
     local answer
@@ -1124,6 +1169,37 @@ function godir () {
         pathname=${lines[0]}
     fi
     cd $T/$pathname
+}
+
+function mka() {
+    case `uname -s` in
+        Darwin)
+            make -j `sysctl hw.ncpu|cut -d" " -f2` "$@"
+            ;;
+        *)
+            schedtool -B -n 1 -e ionice -n 1 make -j `cat /proc/cpuinfo | grep "^processor" | wc -l` "$@"
+            ;;
+    esac
+}
+
+function cmka() {
+    if [ ! -z "$1" ]; then
+        for i in "$@"; do
+            case $i in
+                bacon|otapackage|systemimage)
+                    mka installclean
+                    mka $i
+                    ;;
+                *)
+                    mka clean-$i
+                    mka $i
+                    ;;
+            esac
+        done
+    else
+        mka clean
+        mka
+    fi
 }
 
 # Force JAVA_HOME to point to java 1.6 if it isn't already set
