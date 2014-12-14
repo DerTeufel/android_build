@@ -218,8 +218,7 @@ def fetch_dependencies(repo_path, fallback_branch = None):
         fetch_list = []
 
         for dependency in dependencies:
-            if not is_in_manifest("CyanogenMod/%s" % dependency['repository']) 
-		and not is_in_manifest("DerTeufel/%s" % dependency['repository']):
+            if not is_in_manifest("CyanogenMod/%s" % dependency['repository']) and not is_in_manifest("DerTeufel/%s" % dependency['repository']):
                 fetch_list.append(dependency)
                 syncable_repos.append(dependency['target_path'])
 
